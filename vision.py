@@ -1,9 +1,7 @@
 import cv2
-import numpy as np
 
 
 def getBallPos(cap, lower_hsv, upper_hsv):
-
     ret, frame = cap.read()
     if not ret:
         return

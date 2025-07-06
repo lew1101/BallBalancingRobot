@@ -1,0 +1,34 @@
+import numpy as np
+
+# PINS
+SERVO1_PIN = 10  # dummy, need changing
+SERVO2_PIN = 11
+SERVO3_PIN = 12
+
+# SERVO CONSTANTS
+MIN_PULSEWIDTH = 500  # us
+MAX_PULSEWIDTH = 2500
+
+# ROBOT DIMENSIONS
+H = 10.0  # mm
+X = 4.0
+L1 = 6.0
+L2 = 6.0
+L3 = 6.0
+NORMAL_Z = 4.0
+
+# PID PARAMS
+SAMPLE_TIME = 0.02  # s
+ERROR_THRESHOLD = 4  # mm
+
+KPX = 1.0
+KIX = 0.1
+KDX = 0.05
+
+KPY = 1.0
+KIY = 0.1
+KDY = 0.05
+
+# CV MASK BOUNDS
+LOWER_HSV = np.array([40, 70, 70])
+UPPER_HSV = np.array([80, 255, 255])

@@ -11,3 +11,9 @@ dependencies = [
     "pigpio>=1.78",
     "simple-pid>=2.0.1",
 ]
+
+[dependency-groups]
+dev = [
+    "matplotlib>=3.10.3",
+    "pytest>=8.4.1",
+]
