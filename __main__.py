@@ -12,7 +12,7 @@ else:
 from simple_pid import PID
 
 from time import monotonic, sleep
-from math import fabs, hypot
+from math import hypot
 from argparse import ArgumentParser
 
 from .constants import *
