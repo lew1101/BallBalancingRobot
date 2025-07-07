@@ -29,33 +29,33 @@ parser.add_argument('--setpoint',
 
 
 def main():
-    args = parser.parse_args()
-
-    setPoint = (args.setX, args.setY)
-
-    cap = cv2.VideoCapture(0)
-
-    Servo1 = AngularServo(SERVO1_PIN,
-                          initial_angle=0,
-                          min_pulse_width=MIN_PULSEWIDTH,
-                          max_pulse_width=MAX_PULSEWIDTH)
-    Servo2 = AngularServo(SERVO2_PIN,
-                          initial_angle=0,
-                          min_pulse_width=MIN_PULSEWIDTH,
-                          max_pulse_width=MAX_PULSEWIDTH)
-    Servo3 = AngularServo(SERVO3_PIN,
-                          initial_angle=0,
-                          min_pulse_width=MIN_PULSEWIDTH,
-                          max_pulse_width=MAX_PULSEWIDTH)
-
-    pidX = PID(Kp=KDX, Ki=KIX, Kd=KDX, sample_time=0)
-    pidY = PID(Kp=KDY, Ki=KIY, Kd=KDY, sample_time=0)
-
-    pidX.setpoint, pidY.setpoint = setPoint
-
-    lastTime = monotonic()
-
     try:
+        args = parser.parse_args()
+
+        setPoint = (args.setX, args.setY)
+
+        cap = cv2.VideoCapture(0)
+
+        Servo1 = AngularServo(SERVO1_PIN,
+                              initial_angle=0,
+                              min_pulse_width=MIN_PULSEWIDTH,
+                              max_pulse_width=MAX_PULSEWIDTH)
+        Servo2 = AngularServo(SERVO2_PIN,
+                              initial_angle=0,
+                              min_pulse_width=MIN_PULSEWIDTH,
+                              max_pulse_width=MAX_PULSEWIDTH)
+        Servo3 = AngularServo(SERVO3_PIN,
+                              initial_angle=0,
+                              min_pulse_width=MIN_PULSEWIDTH,
+                              max_pulse_width=MAX_PULSEWIDTH)
+
+        pidX = PID(Kp=KDX, Ki=KIX, Kd=KDX, sample_time=0)
+        pidY = PID(Kp=KDY, Ki=KIY, Kd=KDY, sample_time=0)
+
+        pidX.setpoint, pidY.setpoint = setPoint
+
+        lastTime = monotonic()
+
         while True:
             start = monotonic()
             dt = start - lastTime
@@ -66,21 +66,21 @@ def main():
             if ballPos is None:
                 continue
 
-            errorX = -pidX(ballPos[0], dt)
-            errorY = -pidY(ballPos[1], dt)
+            commandX = -pidX(ballPos[0], dt)
+            commandY = -pidY(ballPos[1], dt)
 
-            errorMag = hypot(errorX, errorY)
+            commandMag = hypot(commandX, commandY)
 
             # don't adjust if euclidean distance from setpoint does not exceed threshold
             # reduce jitter
-            if errorMag < ERROR_THRESHOLD:
+            if commandMag < ERROR_THRESHOLD:
                 continue
-            elif errorMag > MAX_XY:
-                correctionFactor = MAX_XY / errorMag
-                errorX = errorX * correctionFactor
-                errorY = errorY * correctionFactor
+            elif commandMag > MAX_XY:
+                correctionFactor = MAX_XY / commandMag
+                commandX *= correctionFactor
+                commandY *= correctionFactor
 
-            planeNormal = (errorX, errorY, NORMAL_Z)
+            planeNormal = (commandX, commandY, NORMAL_Z)
 
             # set servo angles
             Servo1.angle, Servo2.angle, Servo3.angle = solveAngles(planeNormal, H, X, L1, L2, L3)
@@ -89,9 +89,6 @@ def main():
 
             if (sleep_time := SAMPLE_TIME - elapsed) > 0:
                 sleep(sleep_time)
-
-    except Exception as e:
-        parser.error(str(e))
 
     finally:
         cap.release()
