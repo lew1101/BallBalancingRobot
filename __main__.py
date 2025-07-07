@@ -12,7 +12,7 @@ else:
 from simple_pid import PID
 
 from time import monotonic, sleep
-from math import fabs
+from math import fabs, hypot
 from argparse import ArgumentParser
 
 from .constants import *
@@ -61,13 +61,24 @@ def main():
             dt = start - lastTime
             lastTime = start
 
-            ballX, ballY = getBallPos(cap, LOWER_HSV, UPPER_HSV) or setPoint
+            ballPos = getBallPos(cap, LOWER_HSV, UPPER_HSV)
 
-            errorX = -pidX(ballX, dt)
-            errorY = -pidY(ballY, dt)
-
-            if fabs(errorX) + fabs(errorY) < ERROR_THRESHOLD:  # prevent potential jitter
+            if ballPos is None:
                 continue
+
+            errorX = -pidX(ballPos[0], dt)
+            errorY = -pidY(ballPos[1], dt)
+
+            errorMag = hypot(errorX, errorY)
+
+            # don't adjust if euclidean distance from setpoint does not exceed threshold
+            # reduce jitter
+            if errorMag < ERROR_THRESHOLD:
+                continue
+            elif errorMag > MAX_XY:
+                correctionFactor = MAX_XY / errorMag
+                errorX = errorX * correctionFactor
+                errorY = errorY * correctionFactor
 
             planeNormal = (errorX, errorY, NORMAL_Z)
 
@@ -75,8 +86,9 @@ def main():
             Servo1.angle, Servo2.angle, Servo3.angle = solveAngles(planeNormal, H, X, L1, L2, L3)
 
             elapsed = monotonic() - start
-            sleep_time = max(0, SAMPLE_TIME - elapsed)
-            sleep(sleep_time)
+
+            if (sleep_time := SAMPLE_TIME - elapsed) > 0:
+                sleep(sleep_time)
 
     except Exception as e:
         parser.error(str(e))
