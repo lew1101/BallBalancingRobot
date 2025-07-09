@@ -2,6 +2,10 @@ import numpy as np
 
 from math import tan
 
+DEFAULT_SETPOINT = (0.0, 0.0)
+
+PATH_MAPPING = {"red": "circle", "green": "line", "blue": "infinity"}
+
 # PINS
 SERVO1_PIN = 10  # dummy, need changing
 SERVO2_PIN = 11
@@ -13,11 +17,11 @@ MAX_PULSEWIDTH = 2500
 
 # ROBOT DIMENSIONS
 R = 76.2  # mm
-H = 120.0
+H = 100.0
 X = 60.0
-L1 = 75.0
+L1 = 60.0
 L2 = 75.0
-L3 = 86.2
+L3 = 91.2
 
 # PID PARAMS
 SAMPLE_TIME = 0.02  # s
@@ -35,6 +39,7 @@ KPY = 1.0
 KIY = 0.1
 KDY = 0.05
 
-# CV MASK BOUNDS
-LOWER_HSV = np.array([40, 70, 70])
-UPPER_HSV = np.array([80, 255, 255])
+# CV PARAMS
+CIRCULARITY_THRESHOLD = 0.35
+AREA_THRESHOLD = 400.0
+KERNEL = np.ones((3, 3), np.uint8)
