@@ -13,18 +13,16 @@ class Path:
         self.loop = loop
 
     def hasNext(self) -> bool:
-        return self.loop or self.index < self.length
+        return self.loop or self.index < self.length - 1
 
     def next(self):
-        while True:
-            while self.index < self.length:
-                yield self.path[self.index]
-                self.index += 1
-
-            if self.loop:
-                self.index = 0
-            else:
-                return
+        if self.index < self.length - 1:
+            self.index += 1
+            return self.path[self.index]
+        elif self.loop:
+            self.index = 0
+            return self.initialPoint
+        return None
 
     def __iter__(self):
         return self.path
@@ -58,5 +56,7 @@ def pathFactory(pathtype: str, *args, **kwargs) -> Path:
             return createSetPoint(*args, **kwargs)
         case "circle":
             return createCircularPath(*args, **kwargs)
+        case "custom":
+            return Path(*args, **kwargs)
         case _:
             raise ValueError(f"Unknown path type: '{pathtype}'")
