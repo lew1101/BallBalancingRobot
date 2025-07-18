@@ -49,12 +49,12 @@ def main(args):
 
         # pidX.setpoint, pidY.setpoint = path.initialPoint
 
-        lastTime = monotonic()
+        # lastTime = monotonic()
 
-        while True:
-            start = monotonic()
-            dt = start - lastTime
-            lastTime = start
+        # while True:
+        #     start = monotonic()
+        #     dt = start - lastTime
+        #     lastTime = start
 
             # Vision Code
 
@@ -106,8 +106,15 @@ def main(args):
             # print(
             #     f"x: {commandX:.1f}, y: {commandY:.1f}, tilt: {degrees(tan(NORMAL_Z / commandMag))}"
             # )
+        
+        lastTime = monotonic()
+
+        for setPoint in path:
+            start = monotonic()
+            dt = start - lastTime
+            lastTime = start
             
-            commandX, commandY = path.next()
+            commandX, commandY = setPoint
 
             planeNormal = (commandX, commandY, NORMAL_Z)
 
@@ -124,7 +131,12 @@ def main(args):
             elapsed = monotonic() - start
             if (sleep_time := SAMPLE_TIME - elapsed) > 0:
                 sleep(sleep_time)
+        else:
+            Servo1.angle = 0
+            Servo2.angle = 0
+            Servo3.angle = 0
 
     finally:
-        cap.release()
-        cv2.destroyAllWindows()
+        # cap.release()
+        # cv2.destroyAllWindows()
+        pass

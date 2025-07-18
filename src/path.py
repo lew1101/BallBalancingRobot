@@ -7,25 +7,19 @@ class Path:
 
     def __init__(self, path: list[Vec2f], *, loop: bool = False):
         self.path = path
-        self.index = 0
         self.length = len(path)
-        self.initialPoint = path[0]
         self.loop = loop
 
-    def hasNext(self) -> bool:
-        return self.loop or self.index < self.length - 1
-
-    def next(self):
-        if self.index < self.length - 1:
-            self.index += 1
-            return self.path[self.index]
-        elif self.loop:
-            self.index = 0
-            return self.initialPoint
-        return None
-
     def __iter__(self):
-        return self.path
+        index = 0
+        while True:
+            if index >= self.length:
+                if self.loop:
+                    index = 0
+                else:
+                    return  # raises StopIteration
+            yield self.path[index]
+            index += 1
 
     def __len__(self):
         return len(self.path)
