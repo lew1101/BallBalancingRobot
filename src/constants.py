@@ -1,19 +1,26 @@
 import numpy as np
 
-from math import tan
+from math import tan, radians
 
 DEFAULT_SETPOINT = (0.0, 0.0)
 
 PATH_MAPPING = {"red": "circle", "green": "line", "blue": "infinity"}
 
 # PINS
+# connect in clockwise order
 SERVO1_PIN = 17
 SERVO2_PIN = 27
 SERVO3_PIN = 22
 
+SERVO1_OFFSET = -46
+SERVO2_OFFSET = -46
+SERVO3_OFFSET = -48
+
 # SERVO CONSTANTS
-MIN_PULSEWIDTH = 0.001  # s
-MAX_PULSEWIDTH = 0.002
+MIN_PULSEWIDTH = 0.5/1000  # s
+MAX_PULSEWIDTH = 2.5/1000
+MIN_ANGLE = 90
+MAX_ANGLE = -90
 
 # ROBOT DIMENSIONS
 R = 76.2  # mm
@@ -24,12 +31,12 @@ L2 = 75.0
 L3 = 91.2
 
 # PID PARAMS
-SAMPLE_TIME = 0.02  # s
+SAMPLE_TIME = 0.015  # s
 ERROR_THRESHOLD = 1.0
-NORMAL_Z = 4.0
+NORMAL_Z = 3.0
 
-TILT_MAX = 0.35  # rad
-MAX_XY = NORMAL_Z / tan(TILT_MAX)
+TILT_MAX = 20  # deg
+MAX_XY = NORMAL_Z * tan(radians(TILT_MAX))
 
 KPX = 0.005
 KIX = 0.0

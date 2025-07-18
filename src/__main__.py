@@ -25,19 +25,26 @@ def main(args):
 
     try:
         # cap = cv2.VideoCapture(0)
+        
 
         Servo1 = AngularServo(SERVO1_PIN,
                               initial_angle=0,
                               min_pulse_width=MIN_PULSEWIDTH,
-                              max_pulse_width=MAX_PULSEWIDTH)
+                              max_pulse_width=MAX_PULSEWIDTH,
+                              min_angle=MIN_ANGLE,
+                              max_angle=MAX_ANGLE)
         Servo2 = AngularServo(SERVO2_PIN,
                               initial_angle=0,
                               min_pulse_width=MIN_PULSEWIDTH,
-                              max_pulse_width=MAX_PULSEWIDTH)
+                              max_pulse_width=MAX_PULSEWIDTH,
+                              min_angle=MIN_ANGLE,
+                              max_angle=MAX_ANGLE)
         Servo3 = AngularServo(SERVO3_PIN,
                               initial_angle=0,
                               min_pulse_width=MIN_PULSEWIDTH,
-                              max_pulse_width=MAX_PULSEWIDTH)
+                              max_pulse_width=MAX_PULSEWIDTH,
+                              min_angle=MIN_ANGLE,
+                              max_angle=MAX_ANGLE)
 
         pidX = PID(Kp=KDX, Ki=KIX, Kd=KDX, sample_time=0)
         pidY = PID(Kp=KDY, Ki=KIY, Kd=KDY, sample_time=0)
@@ -115,28 +122,35 @@ def main(args):
             lastTime = start
             
             commandX, commandY = setPoint
+            
+            # print(f"Setpoint: {commandX:.2f}, {commandY:.2f}")
 
             planeNormal = (commandX, commandY, NORMAL_Z)
 
-            # set servo angles
-            try:
-                angle1, angle2, angle3 = solveAngles(planeNormal, H, X, L1, L2, L3)
-                Servo1.angle = angle1
-                Servo2.angle = angle2
-                Servo3.angle = angle3
-            except ValueError:
-                continue
+            # set servo angles (in radians)
+            angle1, angle2, angle3 = solveAngles(planeNormal, H, X, L1, L2, L3)
+            Servo1.angle = degrees(angle1) + SERVO1_OFFSET
+            Servo2.angle = degrees(angle2) + SERVO2_OFFSET
+            Servo3.angle = degrees(angle3) + SERVO3_OFFSET
+            
+            print(f"Angles: {angle1}, {angle2}, {angle3}")
 
             # sleep until next sample time
             elapsed = monotonic() - start
             if (sleep_time := SAMPLE_TIME - elapsed) > 0:
+                print(f"Sleeping for {sleep_time:.4f}s")
                 sleep(sleep_time)
+            else:
+                print(f"Not sleeping, sleep_time = {sleep_time:.4f}s")
         else:
-            Servo1.angle = 0
-            Servo2.angle = 0
-            Servo3.angle = 0
+            Servo1.angle = SERVO1_OFFSET
+            Servo2.angle = SERVO2_OFFSET
+            Servo3.angle = SERVO3_OFFSET
 
     finally:
+        Servo1.angle = SERVO1_OFFSET
+        Servo2.angle = SERVO2_OFFSET
+        Servo3.angle = SERVO3_OFFSET
         # cap.release()
         # cv2.destroyAllWindows()
         pass

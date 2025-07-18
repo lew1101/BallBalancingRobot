@@ -22,15 +22,14 @@ COLOR_BGR = {
 
 def getMask(color, hsv):
     bounds = COLOR_RANGES[color]
-    match color:
-        case "red":
+    if color == "red":
             (lower1, upper1), (lower2, upper2) = bounds
             mask1 = cv2.inRange(hsv, np.array(lower1), np.array(upper1))
             mask2 = cv2.inRange(hsv, np.array(lower2), np.array(upper2))
             return cv2.bitwise_or(mask1, mask2)
-        case _:
-            lower, upper = bounds
-            return cv2.inRange(hsv, np.array(lower), np.array(upper))
+    else:
+        lower, upper = bounds
+        return cv2.inRange(hsv, np.array(lower), np.array(upper))
 
 
 def findBestBlob(mask, min_area=AREA_THRESHOLD, min_circularity=CIRCULARITY_THRESHOLD):

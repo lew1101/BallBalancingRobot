@@ -1,5 +1,7 @@
 from math import pi, sin, cos
 
+import numpy as np
+
 Vec2f = tuple[float, float]
 
 
@@ -41,12 +43,11 @@ def createCircularPath(radius: float, n: int = 100, centre=(0.0, 0.0)) -> Path:
 
 
 def pathFactory(pathtype: str, *args, **kwargs) -> Path:
-    match pathtype:
-        case "setpoint":
-            return createSetPoint(*args, **kwargs)
-        case "circle":
-            return createCircularPath(*args, **kwargs)
-        case "custom":
-            return Path(*args, **kwargs)
-        case _:
-            raise ValueError(f"Unknown path type: '{pathtype}'")
+    if pathtype == "setpoint":
+        return createSetPoint(*args, **kwargs)
+    elif pathtype == "circle":
+        return createCircularPath(*args, **kwargs)
+    elif pathtype == "custom":
+        return Path(*args, **kwargs)
+    else:
+        raise ValueError(f"Unknown path type: '{pathtype}'")
