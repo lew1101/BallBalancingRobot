@@ -36,18 +36,14 @@ def createSetPoint(point: Vec2f) -> Path:
 
 
 def createCircularPath(radius: float, n: int = 100, centre=(0.0, 0.0)) -> Path:
-    path = []
-
     cx, cy = centre
+    
+    theta = np.linspace(0, 2 * np.pi, 100)
 
-    for i in range(n):
-        angle = 2 * pi * i / n
-        x = cx + radius * cos(angle)
-        y = cy + radius * sin(angle)
+    x = cx + radius * np.cos(theta)
+    y = cy + radius * np.sin(theta)
 
-        path.append((x, y))
-
-    return Path(path, loop=True)
+    return Path(list(zip(x, y)), loop=True)
 
 
 def pathFactory(pathtype: str, *args, **kwargs) -> Path:
