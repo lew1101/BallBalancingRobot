@@ -31,11 +31,31 @@ def _solveArmPosition(planeNormal: Vec3f, h: float, x: float, l1: float, l2: flo
 
     return (x, 0.0, 0.0), (xb, 0.0, zb), (xc, 0.0, zc)
 
+def _solveArmHeight(planeNormal: Vec3f, h: float, x: float, l1: float, l2: float, l3: float):
+    a, _, c = planeNormal
+
+    s1 = l3 / sqrt(a * a + c * c)
+    xc = c * s1
+    zc = h - a * s1
+
+    s2 = x * x - 2 * x * xc + xc * xc + zc * zc
+    s3 = l1 * l1 + l2 * l2
+    s4 = s2 - s3
+
+    arg = -(s4 - 2 * l1 * l2) * (s4 + 2 * l1 * l2)
+
+    if arg < 0:
+        raise ValueError(f"Cannot take square root of {arg}")
+
+    s5 = sqrt(arg)
+    s6 = l1**2 - l2**2
+    s7 = s6 + xc**2
+
+    return (s5 * x - s5 * xc + zc * zc * zc + zc * (x * x - 2 * xc * x + s7)) / (2 * s2)
+
 
 def _solveAngle(planeNormal: Vec3f, h: float, x: float, l1: float, l2: float, l3: float) -> float:
-    _, jointB, _ = _solveArmPosition(planeNormal, h, x, l1, l2, l3)
-    _, _, zb = jointB
-    return asin(zb / l1)
+    return asin(_solveArmHeight(planeNormal, h, x, l1, l2, l3) / l1)
 
 
 def _rotateSystem(vec: Vec3f, motorIndex: int) -> Vec3f:

@@ -55,9 +55,9 @@ def findBestBlob(mask, min_area=AREA_THRESHOLD, min_circularity=CIRCULARITY_THRE
     if contourScore(best_contour) < 0:
         return None, None, mask
 
-    (x, y), radius = cv2.minEnclosingCircle(best_contour)
+    centre, radius = cv2.minEnclosingCircle(best_contour)
 
-    return (int(x), int(y)), int(radius), mask
+    return centre, radius, mask
 
 
 def getBallPos(frame,
@@ -71,17 +71,17 @@ def getBallPos(frame,
 
     hsv = cv2.cvtColor(cv2.GaussianBlur(frame, (5, 5), 0), cv2.COLOR_BGR2HSV)
 
-    for color in COLORS:
-        mask = getMask(color, hsv)
+    # for color in COLORS:
+    mask = getMask("blue", hsv)
 
-        centre, radius, clean_mask = findBestBlob(mask, min_area, min_circularity)
+    centre, radius, clean_mask = findBestBlob(mask, min_area, min_circularity)
 
-        if debug:
-            cv2.imshow(f"{color.capitalize()} Mask", clean_mask)
+    if debug:
+        cv2.imshow(f"Blue Mask", clean_mask)
 
-        if radius and radius > ball_radius:
-            ball_color = color
-            ball_centre = centre
-            ball_radius = radius
+    if radius and radius > ball_radius:
+        ball_color = "blue"
+        ball_centre = centre
+        ball_radius = radius
 
     return ball_color, ball_centre, ball_radius
