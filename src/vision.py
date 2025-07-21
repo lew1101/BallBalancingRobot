@@ -6,9 +6,9 @@ from .constants import *
 COLORS = ["red", "green", "blue"]
 
 COLOR_RANGES = {
-    "red": (((0, 145, 85), (10, 255, 255)), ((170, 135, 80), (180, 255, 255))),
+    "red": (((0, 125, 45), (15, 255, 255)), ((150, 115, 60), (190, 255, 255))),
     "green": ((40, 75, 75), (85, 255, 255)),
-    "blue": ((100, 150, 0), (140, 255, 255)),
+    "blue": ((90, 130, 0), (140, 255, 255)),
     # You may need to fine-tune these based on lighting
 }
 

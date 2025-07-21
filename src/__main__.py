@@ -1,34 +1,59 @@
 import cv2
+import pigpio
 from picamera2 import Picamera2
 
+import csv
 from time import monotonic, sleep
 from math import hypot, fabs, atan2, degrees
-from simple_pid import PID
-from gpiozero import Device, AngularServo  # type: ignore
-
-import numpy as np
 
 from .constants import *
 from .path import pathFactory
 from .kinematics import solveAngles
 from .vision import getBallPos, COLOR_BGR
+from .control import PIDController
+
+
+def angleToPulsewidth(angle, *, min_angle=MIN_ANGLE, max_angle=MAX_ANGLE,
+                        min_pulse=MIN_PULSEWIDTH, max_pulse=MAX_PULSEWIDTH, reverse=False):
+    
+    angle = max(min(angle, max_angle), min_angle)
+
+    # Reverse angle if needed
+    if reverse:
+        angle = max_angle - (angle - min_angle)
+
+    # Linear interpolation
+    scale = (angle - min_angle) / (max_angle - min_angle)
+    pulse = min_pulse + scale * (max_pulse - min_pulse)
+    
+    return int(pulse)
+
+def setArmPositions(pi, angle1, angle2, angle3):
+    pi.set_servo_pulsewidth(SERVO1_PIN, angleToPulsewidth(angle1 + SERVO1_OFFSET, reverse=True))
+    pi.set_servo_pulsewidth(SERVO2_PIN, angleToPulsewidth(angle2 + SERVO2_OFFSET, reverse=True))
+    pi.set_servo_pulsewidth(SERVO3_PIN, angleToPulsewidth(angle3 + SERVO3_OFFSET, reverse=True))
 
 
 def main(args):
     DEBUG = getattr(args, "debug", False)
+    
+    # logfile = open("pid_log.csv", "w", newline='')
+    # logger = csv.writer(logfile)
+    # logger.writerow(["time", "ballX", "ballY", "pid_x", "pid_y", "angle1", "angle2", "angle3"])
 
-    from gpiozero.pins.pigpio import PiGPIOFactory  # type: ignore
-    Device.pin_factory = PiGPIOFactory()
-        
     try:
-        # print("Starting Picamera2")
+        pi = pigpio.pi()
+        
+        if not pi.connected:
+            raise RuntimeError("Failed to connect to pigpio daemon. Is it running?")    
+        
+        setArmPositions(pi, 0, 0, 0)  # reset servos to 0 position
+        
+        print("Starting Picamera2")
         picam2 = Picamera2()
         
         sensor_w, sensor_h = picam2.sensor_resolution
         side = min(sensor_w, sensor_h)
-        
-        # crop_x = (sensor_w - side) // 16
-        # crop_y = (sensor_h - side) // 16
 
         config = picam2.create_preview_configuration(
             main={"size": (sensor_w // 4, sensor_h // 4), 'format': 'RGB888'},
@@ -37,36 +62,16 @@ def main(args):
         picam2.start()
        
         cv2.startWindowThread()
+        # path = pathFactory("circle", radius=35, n=100)
 
-        Servo1 = AngularServo(SERVO1_PIN,
-                              initial_angle=0,
-                              min_pulse_width=MIN_PULSEWIDTH,
-                              max_pulse_width=MAX_PULSEWIDTH,
-                              min_angle=MIN_ANGLE,
-                              max_angle=MAX_ANGLE)
-        Servo2 = AngularServo(SERVO2_PIN,
-                              initial_angle=0,
-                              min_pulse_width=MIN_PULSEWIDTH,
-                              max_pulse_width=MAX_PULSEWIDTH,
-                              min_angle=MIN_ANGLE,
-                              max_angle=MAX_ANGLE)
-        Servo3 = AngularServo(SERVO3_PIN,
-                              initial_angle=0,
-                              min_pulse_width=MIN_PULSEWIDTH,
-                              max_pulse_width=MAX_PULSEWIDTH,
-                              min_angle=MIN_ANGLE,
-                              max_angle=MAX_ANGLE)
-
-        pidX = PID(Kp=KPX, Ki=KIX, Kd=KDX, sample_time=0)
-        pidY = PID(Kp=KPY, Ki=KIY, Kd=KDY, sample_time=0)
-        
-        
-        # path = pathFactory("circle", radius=MAX_XY, n=100)
-
-        path = pathFactory("setpoint", getattr(args, "setPoint", DEFAULT_SETPOINT))
+        path = pathFactory("setpoint", getattr(args, "setpoint", DEFAULT_SETPOINT))
         pathiter = iter(path)
-
-        setPoint = pidX.setpoint, pidY.setpoint = next(pathiter)
+        
+        setpoint = setX, setY = next(pathiter)
+                
+        print(setX, setY)
+        pidX = PIDController(kp=KPX, ki=KIX, kd=KDX, setpoint=setX, alpha=ALPHA)
+        pidY = PIDController(kp=KPY, ki=KIY, kd=KDY, setpoint=setY, alpha=ALPHA)
 
         lastTime = monotonic()
 
@@ -88,12 +93,18 @@ def main(args):
             color, cv_centre, radius = getBallPos(frame, debug=False)
             
             if cv_centre is None:
+                setArmPositions(pi, 0, 0, 0)  # reset servos to 0 position
+
                 if DEBUG:
                     cv2.imshow("Preview", frame)
                 continue # get next frame as fast as possible
             
             cx, cy = cv_centre
 
+            # convert cv coordinates to robot coordinates
+            # cv2 coordinates: (x, y) = (col, row)
+            # robot coordinates: (x, y) = (y, -x)
+            # so we need to swap x and y, and negate x
             ballX = cy - OUTPUT_SIZE[1] // 2
             ballY = OUTPUT_SIZE[0] // 2 - cx
 
@@ -104,57 +115,62 @@ def main(args):
                 cv2.imshow("Preview", frame)
                 
             # calculate x and y component of plane normal
-            commandX = pidX(ballX, dt)  # type: ignore
-            commandY = pidY(ballY, dt)  # type: ignore
-            
-            # print(f"PID: {commandX}, {commandY}")
-            # print(f"Ball: {ballX}, {ballY}")
+            pidXVal, errorX = pidX(ballX, dt)  # type: ignore
+            pidYVal, errorY = pidY(ballY, dt)  # type: ignore
 
-            commandMag = hypot(commandX, commandY)
+            pidMag = hypot(pidXVal, pidYVal)
+            
+            errorMag = hypot(errorX, errorY)
 
             # don't adjust if euclidean distance from setpoint does not exceed threshold
             # reduce jitter
-            if commandMag < ERROR_THRESHOLD:
-                nextSetpoint = next(pathiter, setPoint)
-                if nextSetpoint is not None:
-                    setPoint = pidX.setpoint, pidY.setpoint = nextSetpoint
+            if errorMag < ERROR_THRESHOLD:
+                setpoint = setX, setY = next(pathiter, setpoint) # get next setpoint from path, with default of current point if fails. 
+                
+                pidX.updateSetpoint(setX)
+                pidY.updateSetpoint(setY)
+                
+                print(f"Setpoint updated to: {setX}, {setY}")
                 continue
 
             # clamp tilt by clamping magnitude of xy vector
-            elif commandMag > MAX_XY:
-                correctionFactor = MAX_XY / commandMag
-                commandX *= correctionFactor
-                commandY *= correctionFactor
+            elif pidMag > MAX_XY:
+                correctionFactor = MAX_XY / pidMag
+                commandX = pidXVal * correctionFactor
+                commandY = pidYVal * correctionFactor
 
-            # print(
-                # f"x: {commandX:.2f}, y: {commandY:.2f}, tilt: {degrees(atan2(hypot(commandX, commandY), NORMAL_Z)):.1f}"
-            # )
-            
-            # print(f"Setpoint: {commandX:.2f}, {commandY:.2f}")
+                print("tilt clamped to max XY")
+            else:
+                commandX = pidXVal
+                commandY = pidYVal
+                
+            # print(f"x: {commandX:.2f}, y: {commandY:.2f}, tilt: {degrees(atan2(hypot(commandX, commandY), NORMAL_Z)):.1f}")
 
             planeNormal = (commandX, commandY, NORMAL_Z)
 
             # set servo angles (in radians)
             angle1, angle2, angle3 = solveAngles(planeNormal, H, X, L1, L2, L3)
-            Servo1.angle = degrees(angle1) + SERVO1_OFFSET
-            Servo2.angle = degrees(angle2) + SERVO2_OFFSET
-            Servo3.angle = degrees(angle3) + SERVO3_OFFSET
+            setArmPositions(pi, angle1, angle2, angle3)
             
-            # print(f"Angles: {degrees(angle1)}, {degrees(angle2)}, {degrees(angle3)}")
+            # print(f"Angles: {angle1}, {angle2}, {angle3}")
+            
+            # logger.writerow([start, ballX, ballY, pidXVal, pidYVal, angle1, angle2, angle3])
 
             # sleep until next sample time
             elapsed = monotonic() - start
             sleep_time = SAMPLE_TIME - elapsed
             if sleep_time > 0:
-                print(f"Sleeping for {sleep_time:.4f}s")
+                # print(f"Sleeping for {sleep_time:.4f}s")
                 sleep(sleep_time)
             else:
-                print(f"Not sleeping, sleep_time = {sleep_time:.4f}s")
+                pass
+                # print(f"Not sleeping, sleep_time = {sleep_time:.4f}s")
 
     finally:
-        Servo1.angle = SERVO1_OFFSET
-        Servo2.angle = SERVO2_OFFSET
-        Servo3.angle = SERVO3_OFFSET
+        setArmPositions(pi, 0, 0, 0)  # reset servos to 0 position
         
+        # logfile.close()
         cv2.destroyAllWindows()
+        
+        pi.stop()
         picam2.stop()

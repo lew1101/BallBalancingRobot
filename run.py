@@ -4,7 +4,7 @@ from os import getenv
 from argparse import ArgumentParser
 
 from src.__main__ import main
-
+                
 parser = ArgumentParser(description="Ball-balancing Robot")
 parser.add_argument('--setpoint',
                     type=float,
@@ -16,7 +16,7 @@ parser.add_argument('--setpoint',
 parser.add_argument("--debug",
                     action="store_true",
                     help="Enable debug mode",
-                    default=getenv("DEBUG") == "true")
+                    default=getenv("DEBUG"))
 
 if __name__ == "__main__":
     args = parser.parse_args()
