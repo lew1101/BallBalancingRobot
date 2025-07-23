@@ -2,7 +2,7 @@ import cv2
 import pigpio
 from picamera2 import Picamera2
 
-import csv
+# import csv
 from time import monotonic, sleep
 from math import hypot, fabs, atan2, degrees
 
@@ -28,12 +28,35 @@ def angleToPulsewidth(angle, *, min_angle=MIN_ANGLE, max_angle=MAX_ANGLE,
     
     return int(pulse)
 
+
 def setArmPositions(pi, angle1, angle2, angle3):
     pi.set_servo_pulsewidth(SERVO1_PIN, angleToPulsewidth(angle1 + SERVO1_OFFSET, reverse=True))
     pi.set_servo_pulsewidth(SERVO2_PIN, angleToPulsewidth(angle2 + SERVO2_OFFSET, reverse=True))
     pi.set_servo_pulsewidth(SERVO3_PIN, angleToPulsewidth(angle3 + SERVO3_OFFSET, reverse=True))
+    
+    
+def cvToRobotCoords(cv_coords):
+    # convert cv coordinates to robot coordinates
+    # cv2 coordinates: (x, y) = (col, row)
+    # robot coordinates: (x, y) = (y, -x)
+    # so we need to swap x and y, and negate x
+    cx, cy = cv_coords
+    
+    rX = cy - OUTPUT_SIZE[1] // 2
+    rY = OUTPUT_SIZE[0] // 2 - cx
+    
+    return rX, rY
 
 
+def robotToCvCoords(robot_coords):
+    rX, rY = robot_coords
+    
+    cx = OUTPUT_SIZE[0] // 2 - rY
+    cy = rX + OUTPUT_SIZE[1] // 2
+    
+    return cx, cy
+
+    
 def main(args):
     DEBUG = getattr(args, "debug", False)
     
@@ -49,6 +72,10 @@ def main(args):
         
         setArmPositions(pi, 0, 0, 0)  # reset servos to 0 position
         
+        if DEBUG:
+            print("Starting CV window thread")
+            cv2.startWindowThread()
+        
         print("Starting Picamera2")
         picam2 = Picamera2()
         
@@ -61,17 +88,16 @@ def main(args):
         picam2.configure(config)
         picam2.start()
        
-        cv2.startWindowThread()
-        # path = pathFactory("circle", radius=35, n=100)
+        # path = pathFactory("circle", radius=35, n=50)
 
         path = pathFactory("setpoint", getattr(args, "setpoint", DEFAULT_SETPOINT))
         pathiter = iter(path)
         
         setpoint = setX, setY = next(pathiter)
-                
-        print(setX, setY)
-        pidX = PIDController(kp=KPX, ki=KIX, kd=KDX, setpoint=setX, alpha=ALPHA)
-        pidY = PIDController(kp=KPY, ki=KIY, kd=KDY, setpoint=setY, alpha=ALPHA)
+        print(f"Intial setpoint: ({setX}, {setY})")
+        
+        pidX = PIDController(kp=KPX, ki=KIX, kd=KDX, setpoint=setX, alpha=ALPHA, maxIntegral=MAX_INTEGRAL)
+        pidY = PIDController(kp=KPY, ki=KIY, kd=KDY, setpoint=setY, alpha=ALPHA, maxIntegral=MAX_INTEGRAL)
 
         lastTime = monotonic()
 
@@ -92,65 +118,80 @@ def main(args):
             
             color, cv_centre, radius = getBallPos(frame, debug=False)
             
+            if DEBUG:
+                # draw current setpoint
+                cvSetX, cvSetY = robotToCvCoords(setpoint)
+                cv2.circle(frame, (int(cvSetX), int(cvSetY)), radius=4, color=(0, 0, 255), thickness=-1)
+            
             if cv_centre is None:
-                setArmPositions(pi, 0, 0, 0)  # reset servos to 0 position
-
+                # no ball detected
+                setArmPositions(pi, 0, 0, 0) 
+                
                 if DEBUG:
                     cv2.imshow("Preview", frame)
-                continue # get next frame as fast as possible
+                continue # don't sleep, get next frame immediately
             
-            cx, cy = cv_centre
-
-            # convert cv coordinates to robot coordinates
-            # cv2 coordinates: (x, y) = (col, row)
-            # robot coordinates: (x, y) = (y, -x)
-            # so we need to swap x and y, and negate x
-            ballX = cy - OUTPUT_SIZE[1] // 2
-            ballY = OUTPUT_SIZE[0] // 2 - cx
+            ballX, ballY = cvToRobotCoords(cv_centre)
+            
+            # print(f"Ball position: ({ballX:.2f}, {ballY:.2f})")
 
             if DEBUG:
-                cv2.circle(frame, (int(cx), int(cy)) , int(radius), COLOR_BGR[color], 2)
+                # draw ball position
+                cx, cy = cv_centre
+                cv2.circle(frame, (int(cx), int(cy)), int(radius), COLOR_BGR[color], 2)
                 cv2.putText(frame, f"({ballX:.2f}, {ballY:.2f})", (int(cx) - 20, int(cy) - 20),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.4, COLOR_BGR[color], 2)
                 cv2.imshow("Preview", frame)
                 
             # calculate x and y component of plane normal
-            pidXVal, errorX = pidX(ballX, dt)  # type: ignore
-            pidYVal, errorY = pidY(ballY, dt)  # type: ignore
+            pidXVal, errorX = pidX(ballX, dt) 
+            pidYVal, errorY = pidY(ballY, dt) 
 
             pidMag = hypot(pidXVal, pidYVal)
             
             errorMag = hypot(errorX, errorY)
 
-            # don't adjust if euclidean distance from setpoint does not exceed threshold
-            # reduce jitter
+            commandX = pidXVal
+            commandY = pidYVal
+
             if errorMag < ERROR_THRESHOLD:
+                # euclidean distance to setpoint is less than threshold
+                # pidXVal = pidYVal = 0 # prevent jitter  
+                
+                # update setpoint 
                 setpoint = setX, setY = next(pathiter, setpoint) # get next setpoint from path, with default of current point if fails. 
                 
                 pidX.updateSetpoint(setX)
                 pidY.updateSetpoint(setY)
                 
-                print(f"Setpoint updated to: {setX}, {setY}")
-                continue
-
-            # clamp tilt by clamping magnitude of xy vector
+                print(f"Setpoint updated to: ({setX}, {setY})")
+                
             elif pidMag > MAX_XY:
+                # clamp tilt by clamping magnitude of xy vector
                 correctionFactor = MAX_XY / pidMag
                 commandX = pidXVal * correctionFactor
                 commandY = pidYVal * correctionFactor
 
-                print("tilt clamped to max XY")
-            else:
-                commandX = pidXVal
-                commandY = pidYVal
+                print("Tilt clamped to max XY")
                 
             # print(f"x: {commandX:.2f}, y: {commandY:.2f}, tilt: {degrees(atan2(hypot(commandX, commandY), NORMAL_Z)):.1f}")
 
             planeNormal = (commandX, commandY, NORMAL_Z)
-
-            # set servo angles (in radians)
-            angle1, angle2, angle3 = solveAngles(planeNormal, H, X, L1, L2, L3)
-            setArmPositions(pi, angle1, angle2, angle3)
+            
+            angles = solveAngles(planeNormal, H, X, L1, L2, L3)
+            
+            # for i in range(len(angles)):
+            #     angle = angles[i]
+            #     if 0 < abs(angle) < DEGREE_DEADBAND:
+            #         # Snap to 0 or to ±deadband based on which is closer
+            #         angles[i] = 0 
+            #         # if abs(angle) < DEGREE_DEADBAND / 2:
+            #         #     angles[i] = 0
+            #         # else:
+            #         #     angles[i] = DEGREE_DEADBAND * (1 if angle > 0 else -1)
+            
+            setArmPositions(pi, *angles)
+            
             
             # print(f"Angles: {angle1}, {angle2}, {angle3}")
             
@@ -163,11 +204,13 @@ def main(args):
                 # print(f"Sleeping for {sleep_time:.4f}s")
                 sleep(sleep_time)
             else:
-                pass
                 # print(f"Not sleeping, sleep_time = {sleep_time:.4f}s")
+                pass
+    except KeyboardInterrupt:
+        print("KeyboardInterrupt, stopping...")
 
     finally:
-        setArmPositions(pi, 0, 0, 0)  # reset servos to 0 position
+        setArmPositions(pi, 0, 0, 0) 
         
         # logfile.close()
         cv2.destroyAllWindows()

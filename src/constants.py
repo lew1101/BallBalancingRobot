@@ -13,7 +13,7 @@ SERVO2_PIN = 27
 SERVO3_PIN = 22
 
 SERVO1_OFFSET = -45
-SERVO2_OFFSET = -46
+SERVO2_OFFSET = -45
 SERVO3_OFFSET = -48
 
 # SERVO CONSTANTS
@@ -24,7 +24,7 @@ MAX_ANGLE = 90
 
 # ROBOT DIMENSIONS
 R = 76.2  # mm
-H = 75.0
+H = 85.0
 X = 60.0
 L1 = 60.0
 L2 = 75.0
@@ -32,17 +32,24 @@ L3 = 91.2
 
 # PID PARAMS
 SAMPLE_TIME = 0.02  # s
-ERROR_THRESHOLD = 1.0
+ERROR_THRESHOLD = 5.0 # cv magnitude units
 NORMAL_Z = 4.0
 
 TILT_MAX = 32  # deg
 MAX_XY = NORMAL_Z * tan(radians(TILT_MAX))
 
-ALPHA = 0.45 # low-pass filter constant (0.0-1.0)
+ALPHA = 0.55 # low-pass filter constant (0.0-1.0)
+MAX_INTEGRAL = 0.23  # max integral value to prevent windup
+DEGREE_DEADBAND = 0.5  # deg
 
-KPX = 0.00397
-KDX = 0.00184
-KIX = 0.00006
+KPX = 0.00389
+KDX = 0.001937
+KIX = 0.0000097
+
+# KPX = 0.00395
+# KDX = 0.00178
+# KDX = 0.00182
+# KIX = 0.00002
 
 # KPX = 0.00395
 # KDX = 0.0018
@@ -58,5 +65,5 @@ OUTPUT_SIZE = (320, 240)
 FRAME_CENTRE = (OUTPUT_SIZE[0] // 2, OUTPUT_SIZE[1] // 2)
 
 CIRCULARITY_THRESHOLD = 0.35
-AREA_THRESHOLD = 120.0
+AREA_THRESHOLD = 100.0
 KERNEL = np.ones((3, 3), np.uint8)

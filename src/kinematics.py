@@ -88,10 +88,9 @@ def solveArmPositions(planeNormal: Vec3f, h: float, x: float, l1: float, l2: flo
 
         armPositions.append(trueArmPos)
 
-    return tuple(armPositions)
+    return list(armPositions)
 
 
 def solveAngles(planeNormal: Vec3f, h: float, x: float, l1: float, l2: float, l3: float):
-    return tuple(
-        _solveAngle(_rotateSystem(planeNormal, motorIndex), h, x, l1, l2, l3)
-        for motorIndex in range(3))
+    return [_solveAngle(_rotateSystem(planeNormal, motorIndex), h, x, l1, l2, l3)
+            for motorIndex in range(3)]
