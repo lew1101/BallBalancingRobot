@@ -17,6 +17,20 @@ resolution-markers = [
 ]
 
 [[package]]
+name = "ahrs"
+version = "0.3.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy", version = "2.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
+    { name = "numpy", version = "2.3.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/66/56/7fc17b6c330eff8986e01dfd3744154ffa45cf4ccd45fd779dc6e2713ec1/AHRS-0.3.1.tar.gz", hash = "sha256:20caf8c76f206ce757594f25f0f017834b8154084cd0a1a39a072753a93d03d8", size = 170087, upload-time = "2021-09-29T17:21:20.147Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a1/2c/953d3cb547673bab4e88a4699c59de16053600345166a926d2f58ee4b179/AHRS-0.3.1-py3-none-any.whl", hash = "sha256:710999319828bd8f34e40851b6aab553798afb15aa1cc0a2a95abd15ed080691", size = 197947, upload-time = "2021-09-29T17:21:17.099Z" },
+]
+
+[[package]]
 name = "argparse"
 version = "1.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -30,6 +44,7 @@ name = "ballbalancingrobot"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "ahrs" },
     { name = "argparse" },
     { name = "opencv-python" },
     { name = "pigpio" },
@@ -44,6 +59,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "ahrs", specifier = ">=0.3.1" },
     { name = "argparse", specifier = ">=1.4.0" },
     { name = "opencv-python", specifier = ">=4.11.0.86" },
     { name = "pigpio", specifier = ">=1.78" },

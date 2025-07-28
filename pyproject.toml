@@ -1,7 +1,7 @@
 [project]
 name = "ballbalancingrobot"
 version = "0.1.0"
-description = "Add your description here"
+description = "3D printed ball-balancing robot"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
@@ -16,6 +16,3 @@ dev = [
     "matplotlib>=3.9.2",
     "pytest>=8.4.1",
 ]
-
-[mypy]
-ignore_missing_imports = True
