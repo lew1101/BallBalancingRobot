@@ -1,4 +1,4 @@
-import cv2 # type: ignore
+import cv2
 import numpy as np
 
 from .constants import *
@@ -19,35 +19,36 @@ COLOR_BGR = {
     "blue": (255.0, 0.0, 0.0),
 }
 
-def cvToRobotCoords(cv_coords):
+
+def cvToRobotCoords(cv_coords, frameCentre=FRAME_CENTRE):
     # convert cv coordinates to robot coordinates
     # cv2 coordinates: (x, y) = (col, row)
     # robot coordinates: (x, y) = (y, -x)
     # so we need to swap x and y, and negate x
     cx, cy = cv_coords
-    
-    rX = cy - OUTPUT_SIZE[1] // 2
-    rY = OUTPUT_SIZE[0] // 2 - cx
-    
+
+    rX = cy - frameCentre[1]
+    rY = frameCentre[0] - cx
+
     return rX, rY
 
 
-def robotToCvCoords(robot_coords):
+def robotToCvCoords(robot_coords, frameCentre=FRAME_CENTRE):
     rX, rY = robot_coords
-    
-    cx = OUTPUT_SIZE[0] // 2 - rY
-    cy = rX + OUTPUT_SIZE[1] // 2
-    
+
+    cx = frameCentre[0] - rY
+    cy = rX + frameCentre[1]
+
     return cx, cy
 
 
 def getMask(color, hsv):
     bounds = COLOR_RANGES[color]
     if color == "red":
-            (lower1, upper1), (lower2, upper2) = bounds
-            mask1 = cv2.inRange(hsv, np.array(lower1), np.array(upper1))
-            mask2 = cv2.inRange(hsv, np.array(lower2), np.array(upper2))
-            return cv2.bitwise_or(mask1, mask2)
+        (lower1, upper1), (lower2, upper2) = bounds
+        mask1 = cv2.inRange(hsv, np.array(lower1), np.array(upper1))
+        mask2 = cv2.inRange(hsv, np.array(lower2), np.array(upper2))
+        return cv2.bitwise_or(mask1, mask2)
     else:
         lower, upper = bounds
         return cv2.inRange(hsv, np.array(lower), np.array(upper))
@@ -70,9 +71,8 @@ def findBestBlob(mask, min_area=AREA_THRESHOLD, min_circularity=CIRCULARITY_THRE
 
     if not contours:
         return None, None, mask
-    # Use the largest contour
-    best_contour = max(contours, key=contourScore, default=None)
 
+    best_contour = max(contours, key=contourScore, default=None)
     if contourScore(best_contour) < 0:
         return None, None, mask
 
