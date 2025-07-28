@@ -1,8 +1,8 @@
-import pigpio
+import pigpio  # type: ignore
 import numpy as np
 
-from ahrs.filters import Madgwick
-from ahrs.common.orientation import q2mat
+from ahrs.filters import Madgwick  # type: ignore
+from ahrs.common.orientation import q2R  # type: ignore
 
 from .constants import *
 
@@ -50,13 +50,19 @@ def streamMPUData(pi: pigpio.pi):
         pi.i2c_close(handle)
 
 
-def streamMPUNormal(pi: pigpio.pi, sampleTime: int, beta: float = 0.1):
-    mag = Madgwick(beta=beta, Dt=sampleTime)
+def createNormalEstimator(pi: pigpio.pi, sampleTime: float = 0.01, beta: float = 0.1):
+    madgwick = Madgwick(gain=beta)
+    mpuStream = streamMPUData(pi)
 
-    for gyro, acc in streamMPUData(pi):
-        q = mag.updateIMU(gyr=np.deg2rad(gyro), acc=np.array(acc))
-        R = q2mat(q)
+    def getNextNormal(dt: float = sampleTime):
+        gyro, acc = next(mpuStream)
+        madgwick.Dt = dt
+        q = madgwick.updateIMU(gyr=np.deg2rad(gyro), acc=np.array(acc))
+        R = q2R(q)
 
         # plane normal vector is the z column of the rotation matrix
         normal = R[:, 2]
-        yield normal
+
+        return normal
+
+    return getNextNormal

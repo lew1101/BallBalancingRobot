@@ -32,15 +32,15 @@ L3 = 91.2
 
 # PID PARAMS
 SAMPLE_TIME = 0.02  # s
-ERROR_THRESHOLD = 5.0 # cv magnitude units
+ERROR_THRESHOLD = 5.0  # cv magnitude units
 NORMAL_Z = 4.0
 
 TILT_MAX = 32  # deg
 MAX_XY = NORMAL_Z * tan(radians(TILT_MAX))
 
-ALPHA = 0.55 # low-pass filter constant (0.0-1.0)
+ALPHA = 0.55  # EMA low-pass filter constant (0.0-1.0)
 MAX_INTEGRAL = 0.23  # max integral value to prevent windup
-DEGREE_DEADBAND = 0.5  # deg
+# DEGREE_DEADBAND = 0.5  # deg
 
 KPX = 0.00389
 KDX = 0.001937
@@ -51,17 +51,16 @@ KIX = 0.0000097
 # KDX = 0.00182
 # KIX = 0.00002
 
-# KPX = 0.00395
-# KDX = 0.0018
-# KIX = 0.00003
-
-
 KPY = KPX
 KDY = KDX
 KIY = KIX
 
+# MPU MADGEWICK PARAMS
+NORMAL_CORRECTION_GAIN = 0.2
+BETA = 0.1
+
 # CV PARAMS
-OUTPUT_SIZE = (320, 240) 
+OUTPUT_SIZE = (320, 240)
 FRAME_CENTRE = (OUTPUT_SIZE[0] // 2, OUTPUT_SIZE[1] // 2)
 
 CIRCULARITY_THRESHOLD = 0.35
