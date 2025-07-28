@@ -1,5 +1,3 @@
-from math import pi, sin, cos
-
 import numpy as np
 
 Vec2f = tuple[float, float]
@@ -11,16 +9,16 @@ class Path:
         self.path = path
         self.length = len(path)
         self.loop = loop
-        
+
     def __getitem__(self, index):
         return self.path[index]
-    
+
     def __setitem__(self, index, value):
         if 0 <= index < self.length:
             self.path[index] = value
         else:
             raise IndexError("Index out of range")
-    
+
     def __contains__(self, item):
         return item in self.path
 
@@ -45,7 +43,7 @@ def createSetPoint(point: Vec2f) -> Path:
 
 def createCircularPath(radius: float, n: int = 100, centre=(0.0, 0.0)) -> Path:
     cx, cy = centre
-    
+
     theta = np.linspace(0, 2 * np.pi, 100)
 
     x = cx + radius * np.cos(theta)
