@@ -1,6 +1,6 @@
-import cv2
-import pigpio
-from picamera2 import Picamera2
+import cv2 # type: ignore
+import pigpio # type: ignore
+from picamera2 import Picamera2 # type: ignore
 
 # import csv
 from time import monotonic, sleep
@@ -9,12 +9,11 @@ from math import hypot, fabs, atan2, degrees
 from .constants import *
 from .path import pathFactory
 from .kinematics import solveAngles
-from .vision import getBallPos, COLOR_BGR
+from .vision import getBallPos, cvToRobotCoords, robotToCvCoords, COLOR_BGR
 from .control import PIDController
 
-
-def angleToPulsewidth(angle, *, min_angle=MIN_ANGLE, max_angle=MAX_ANGLE,
-                        min_pulse=MIN_PULSEWIDTH, max_pulse=MAX_PULSEWIDTH, reverse=False):
+def angleToPulsewidth(angle: float, *, min_angle=MIN_ANGLE, max_angle=MAX_ANGLE,
+                        min_pulse=MIN_PULSEWIDTH, max_pulse=MAX_PULSEWIDTH, reverse=False) -> int:
     
     angle = max(min(angle, max_angle), min_angle)
 
@@ -29,33 +28,11 @@ def angleToPulsewidth(angle, *, min_angle=MIN_ANGLE, max_angle=MAX_ANGLE,
     return int(pulse)
 
 
-def setArmPositions(pi, angle1, angle2, angle3):
+def setArmPositions(pi: pigpio.pi, angle1: float, angle2: float, angle3: float) -> None:
     pi.set_servo_pulsewidth(SERVO1_PIN, angleToPulsewidth(angle1 + SERVO1_OFFSET, reverse=True))
     pi.set_servo_pulsewidth(SERVO2_PIN, angleToPulsewidth(angle2 + SERVO2_OFFSET, reverse=True))
     pi.set_servo_pulsewidth(SERVO3_PIN, angleToPulsewidth(angle3 + SERVO3_OFFSET, reverse=True))
     
-    
-def cvToRobotCoords(cv_coords):
-    # convert cv coordinates to robot coordinates
-    # cv2 coordinates: (x, y) = (col, row)
-    # robot coordinates: (x, y) = (y, -x)
-    # so we need to swap x and y, and negate x
-    cx, cy = cv_coords
-    
-    rX = cy - OUTPUT_SIZE[1] // 2
-    rY = OUTPUT_SIZE[0] // 2 - cx
-    
-    return rX, rY
-
-
-def robotToCvCoords(robot_coords):
-    rX, rY = robot_coords
-    
-    cx = OUTPUT_SIZE[0] // 2 - rY
-    cy = rX + OUTPUT_SIZE[1] // 2
-    
-    return cx, cy
-
     
 def main(args):
     DEBUG = getattr(args, "debug", False)
@@ -105,6 +82,9 @@ def main(args):
             start = monotonic()
             dt = start - lastTime
             lastTime = start
+            
+            # setArmPositions(pi, 0, 0, 0)  
+            # continue
 
             request = picam2.capture_request()
             frame = request.make_array("main")  
@@ -113,9 +93,11 @@ def main(args):
             if frame is None:
                 break
            
+            # Downsample frame to reduce processing time
             square_crop = frame[::2, ::2]  # downsample by 2x
             frame = cv2.resize(square_crop, OUTPUT_SIZE, interpolation=cv2.INTER_NEAREST)
             
+            # get ball position
             color, cv_centre, radius = getBallPos(frame, debug=False)
             
             if DEBUG:
@@ -131,6 +113,7 @@ def main(args):
                     cv2.imshow("Preview", frame)
                 continue # don't sleep, get next frame immediately
             
+            # convert cv coordinates to robot coordinates
             ballX, ballY = cvToRobotCoords(cv_centre)
             
             # print(f"Ball position: ({ballX:.2f}, {ballY:.2f})")
@@ -180,22 +163,12 @@ def main(args):
             
             angles = solveAngles(planeNormal, H, X, L1, L2, L3)
             
-            # for i in range(len(angles)):
-            #     angle = angles[i]
-            #     if 0 < abs(angle) < DEGREE_DEADBAND:
-            #         # Snap to 0 or to ±deadband based on which is closer
-            #         angles[i] = 0 
-            #         # if abs(angle) < DEGREE_DEADBAND / 2:
-            #         #     angles[i] = 0
-            #         # else:
-            #         #     angles[i] = DEGREE_DEADBAND * (1 if angle > 0 else -1)
-            
             setArmPositions(pi, *angles)
             
             
-            # print(f"Angles: {angle1}, {angle2}, {angle3}")
+            # print(f"Angles: {angles[0]}, {angles[1]}, {angles[2]}")
             
-            # logger.writerow([start, ballX, ballY, pidXVal, pidYVal, angle1, angle2, angle3])
+            # logger.writerow([start, ballX, ballY, pidXVal, pidYVal, *angles])
 
             # sleep until next sample time
             elapsed = monotonic() - start

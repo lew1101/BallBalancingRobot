@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
+    "ahrs>=0.3.1",
     "argparse>=1.4.0",
     "opencv-python>=4.11.0.86",
     "pigpio>=1.78",
@@ -15,3 +16,6 @@ dev = [
     "matplotlib>=3.9.2",
     "pytest>=8.4.1",
 ]
+
+[mypy]
+ignore_missing_imports = True

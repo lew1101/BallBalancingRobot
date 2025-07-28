@@ -1,4 +1,4 @@
-import cv2
+import cv2 # type: ignore
 import numpy as np
 
 from .constants import *
@@ -18,6 +18,27 @@ COLOR_BGR = {
     "green": (0.0, 255.0, 0.0),
     "blue": (255.0, 0.0, 0.0),
 }
+
+def cvToRobotCoords(cv_coords):
+    # convert cv coordinates to robot coordinates
+    # cv2 coordinates: (x, y) = (col, row)
+    # robot coordinates: (x, y) = (y, -x)
+    # so we need to swap x and y, and negate x
+    cx, cy = cv_coords
+    
+    rX = cy - OUTPUT_SIZE[1] // 2
+    rY = OUTPUT_SIZE[0] // 2 - cx
+    
+    return rX, rY
+
+
+def robotToCvCoords(robot_coords):
+    rX, rY = robot_coords
+    
+    cx = OUTPUT_SIZE[0] // 2 - rY
+    cy = rX + OUTPUT_SIZE[1] // 2
+    
+    return cx, cy
 
 
 def getMask(color, hsv):

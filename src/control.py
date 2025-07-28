@@ -1,21 +1,18 @@
-from .constants import ALPHA
-
-
 class PIDController:
     
-    def __init__(self, kp, ki, kd, setpoint=0, alpha=1, maxIntegral=float('inf')):
+    def __init__(self, kp: float, ki: float, kd: float, setpoint=0.0, alpha=1.0, maxIntegral=float('inf')):
         self.kp = kp
         self.ki = ki
         self.kd = kd
         self.alpha = alpha
         
-        self.prevInput = None
-        self.prevError = 0
-        self.integral = 0
-        self.setpoint = 0
+        self.prevInput = 0.0
+        self.prevError = 0.0
+        self.integral = 0.0
+        self.setpoint = setpoint
         self.maxIntegral = maxIntegral
         
-    def __call__(self, rawInput: float, dt: float) -> float:
+    def __call__(self, rawInput: float, dt: float) -> tuple[float, float]:
         if self.prevInput is None:
             filteredInput = rawInput
         else: # apply low-pass filter (EMA)

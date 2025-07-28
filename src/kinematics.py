@@ -1,4 +1,4 @@
-from math import sqrt, asin, degrees
+from math import sqrt, asin
 
 Vec3f = tuple[float, float, float]
 
@@ -55,7 +55,7 @@ def _solveArmHeight(planeNormal: Vec3f, h: float, x: float, l1: float, l2: float
 
 
 def _solveAngle(planeNormal: Vec3f, h: float, x: float, l1: float, l2: float, l3: float) -> float:
-    return degrees(asin(_solveArmHeight(planeNormal, h, x, l1, l2, l3) / l1))
+    return asin(_solveArmHeight(planeNormal, h, x, l1, l2, l3) / l1)
 
 
 def _rotateSystem(vec: Vec3f, motorIndex: int) -> Vec3f:
