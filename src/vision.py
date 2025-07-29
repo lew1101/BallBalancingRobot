@@ -3,6 +3,8 @@ import numpy as np
 
 from .constants import *
 
+Vec2f = tuple[float, float]
+
 COLORS = ["red", "green", "blue"]
 
 COLOR_RANGES = {
@@ -20,7 +22,7 @@ COLOR_BGR = {
 }
 
 
-def cvToRobotCoords(cv_coords, frameCentre=FRAME_CENTRE):
+def cvToRobotCoords(cv_coords: Vec2f, frameCentre: Vec2f = FRAME_CENTRE) -> Vec2f:
     # convert cv coordinates to robot coordinates
     # cv2 coordinates: (x, y) = (col, row)
     # robot coordinates: (x, y) = (y, -x)
@@ -33,7 +35,7 @@ def cvToRobotCoords(cv_coords, frameCentre=FRAME_CENTRE):
     return rX, rY
 
 
-def robotToCvCoords(robot_coords, frameCentre=FRAME_CENTRE):
+def robotToCvCoords(robot_coords: Vec2f, frameCentre: Vec2f = FRAME_CENTRE) -> Vec2f:
     rX, rY = robot_coords
 
     cx = frameCentre[0] - rY

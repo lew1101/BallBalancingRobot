@@ -48,11 +48,12 @@ def main(args):
     # logger = csv.writer(logfile)
     # logger.writerow(["time", "ballX", "ballY", "pid_x", "pid_y", "angle1", "angle2", "angle3"])
 
+    # Init PIGPIO
+    pi = pigpio.pi()
+    if not pi.connected:
+        raise RuntimeError("Failed to connect to pigpio daemon. Is it running?")
+
     try:
-        # Init PIGPIO
-        pi = pigpio.pi()  # start gpio
-        if not pi.connected:
-            raise RuntimeError("Failed to connect to pigpio daemon. Is it running?")
         setArmPositions(pi, 0, 0, 0)  # reset servos to 0 position
 
         if DEBUG:
@@ -126,7 +127,6 @@ def main(args):
 
             if cv_centre is None:  # no ball detected
                 setArmPositions(pi, 0, 0, 0)
-
                 if DEBUG:
                     cv2.imshow("Preview", frame)
                 continue  # don't sleep, get next frame immediately
@@ -192,11 +192,10 @@ def main(args):
     finally:
         setArmPositions(pi, 0, 0, 0)
 
-        if pi:
-            pi.stop()
-
         if picam2:
             picam2.stop()
+
+        pi.stop()
 
         # logfile.close()
         cv2.destroyAllWindows()
