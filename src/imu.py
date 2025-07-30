@@ -50,13 +50,13 @@ def streamMPUData(pi: pigpio.pi):
         pi.i2c_close(handle)
 
 
-def createNormalEstimator(pi: pigpio.pi, sampleTime: float = 0.01, beta: float = 0.1):
+def createNormalEstimator(pi: pigpio.pi, beta: float = 0.1):
     madgwick = Madgwick(gain=beta)
     mpuStream = streamMPUData(pi)
 
-    def getNextNormal(dt: float = sampleTime):
+    def getNextNormal(dt: float):
         gyro, acc = next(mpuStream)
-        madgwick.Dt = dt
+        Madgwick.Dt = dt
         q = madgwick.updateIMU(gyr=np.deg2rad(gyro), acc=np.array(acc))
         R = q2R(q)
 

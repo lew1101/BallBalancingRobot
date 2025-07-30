@@ -53,7 +53,7 @@ def main(args):
         setpoint = setX, setY = next(pathiter)
         print(f"Intial setpoint: ({setX}, {setY})")
 
-        getNextNormal = createNormalEstimator(pi, SAMPLE_TIME, BETA)  # closure
+        getNextNormal = createNormalEstimator(pi, beta=BETA)  # closure
 
         pidX = PIDController(kp=KPX,
                              ki=KIX,
