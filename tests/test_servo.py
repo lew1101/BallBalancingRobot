@@ -3,7 +3,7 @@ import pigpio  # type: ignore
 from math import radians
 
 from src.constants import *
-from src.__main__ import setArmPositions
+from src.actuation import setArmPositions
 
 
 def test_servo():
