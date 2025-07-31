@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import cv2  # type : ignore
 import pigpio  # type: ignore
 
@@ -46,10 +48,11 @@ def parseArgs(argv=None):
 
 def main(argv=None) -> None:
     kwargs = parseArgs(argv)
+    
 
-    DEBUG = getattr(kwargs, "debug", False)
-    IMU_ENABLED = not getattr(kwargs, "no_imu", False)
-
+    DEBUG = kwargs.get("debug", False)
+    IMU_ENABLED = not kwargs.get("no_imu", False)
+    
     # logfile = open("pid_log.csv", "w", newline='')
     # logger = csv.writer(logfile)
     # logger.writerow(["time", "ballX", "ballY", "pid_x", "pid_y", "angle1", "angle2", "angle3"])
@@ -65,7 +68,8 @@ def main(argv=None) -> None:
         setArmPositions(pi, 0, 0, 0)  # reset servos to 0 position
 
         if DEBUG:
-            print("Starting CV window thread")
+            print("Debug mode enabled"
+                  "Starting CV window thread")
             cv2.startWindowThread()
 
         # Init PICAMERA
@@ -85,7 +89,7 @@ def main(argv=None) -> None:
             print("IMU enabled, creating normal estimator")
             getNextNormal = createNormalEstimator(pi, beta=BETA)  # closure
 
-        path = pathFactory("setpoint", getattr(kwargs, "setpoint", DEFAULT_SETPOINT))
+        path = pathFactory("setpoint", kwargs.get("setpoint", DEFAULT_SETPOINT))
         pathiter = iter(path)
 
         setpoint = setX, setY = next(pathiter)
@@ -125,7 +129,7 @@ def main(argv=None) -> None:
             frame = cv2.resize(square_crop, OUTPUT_SIZE, interpolation=cv2.INTER_NEAREST)
 
             # get ball position
-            color, cv_centre, radius = getBallPos(frame, debug=False)
+            color, cv_centre, radius = getBallPos(frame, debug=DEBUG)
 
             if DEBUG:
                 # draw current setpoint
@@ -156,16 +160,28 @@ def main(argv=None) -> None:
             pidXVal, errorX = pidX(ballX, dt)
             pidYVal, errorY = pidY(ballY, dt)
 
-            pidMag = hypot(pidXVal, pidYVal)
-            errorMag = hypot(errorX, errorY)
-
             if IMU_ENABLED:
                 # correct normal based on IMU data
                 actualNormal = getNextNormal(dt)
                 normalX, normalY, _ = actualNormal * NORMAL_Z / actualNormal[2]
                 normalCmdX = pidXVal + NORMAL_CORRECTION_GAIN * (normalX - pidXVal)
                 normalCmdY = pidYVal + NORMAL_CORRECTION_GAIN * (normalY - pidYVal)
+            else:
+                normalCmdX = pidXVal
+                normalCmdY = pidYVal
+                
+            
+            # Check if clamping is necessary
+            pidMag = hypot(pidXVal, pidYVal)    
+            if pidMag > MAX_XY:
+                # clamp tilt by clamping magnitude of xy vector
+                correctionFactor = MAX_XY / pidMag
+                normalCmdX = pidXVal * correctionFactor
+                normalCmdY = pidYVal * correctionFactor
+                print("Tilt clamped to max XY")
 
+            # Check if setpoint needs to be updated
+            errorMag = hypot(errorX, errorY)
             if errorMag < ERROR_THRESHOLD:
                 # euclidean distance to setpoint is less than threshold
                 # get next setpoint from path, with default of current point if fails.
@@ -174,14 +190,8 @@ def main(argv=None) -> None:
                 pidY.updateSetpoint(setY)
                 print(f"Setpoint updated to: ({setX}, {setY})")
 
-            elif pidMag > MAX_XY:
-                # clamp tilt by clamping magnitude of xy vector
-                correctionFactor = MAX_XY / pidMag
-                normalCmdX = pidXVal * correctionFactor
-                normalCmdY = pidYVal * correctionFactor
-                print("Tilt clamped to max XY")
-
             # print(f"tilt: {degrees(atan2(hypot(normalCmdX, normalCmdY), NORMAL_Z)):.1f}")
+            
             planeNormal = (normalCmdX, normalCmdY, NORMAL_Z)
             angles = solveAngles(planeNormal, H, X, L1, L2, L3)
             setArmPositions(pi, *angles)
