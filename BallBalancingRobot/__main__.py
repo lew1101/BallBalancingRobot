@@ -1,4 +1,4 @@
-import cv2
+import cv2  # type : ignore
 import pigpio  # type: ignore
 
 from picamera2 import Picamera2  # type: ignore
@@ -21,11 +21,11 @@ from .imu import createNormalEstimator
 def parseArgs(argv=None):
     parser = ArgumentParser(description="Ball-balancing Robot")
     parser.add_argument(
-        '--setpoint',
+        "--setpoint",
         type=float,
         nargs=2,
-        metavar='setPoint',
-        help='Setpoint for ball position as two floats (x y)',
+        metavar=("X", "Y"),
+        help="Setpoint for ball position as two floats (x, y)",
         default=(0.0, 0.0),
     )
     parser.add_argument(
@@ -37,14 +37,16 @@ def parseArgs(argv=None):
     parser.add_argument(
         "--no-imu",
         action="store_true",
-        help="Enable debug mode",
+        help="Disable IMU",
         default=False,
     )
 
     return vars(parser.parse_args(argv))
 
 
-def main(**kwargs) -> None:
+def main(argv=None) -> None:
+    kwargs = parseArgs(argv)
+    
     DEBUG = getattr(kwargs, "debug", False)
     IMU_ENABLED = not getattr(kwargs, "no_imu", False)
 
@@ -207,7 +209,5 @@ def main(**kwargs) -> None:
         # logfile.close()
         cv2.destroyAllWindows()
 
-
 if __name__ == "__main__":
-    kwargs = parseArgs()
-    main(**kwargs)
+    main()

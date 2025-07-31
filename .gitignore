@@ -8,3 +8,5 @@ __pycache__/
 .venv
 
 pid_log.csv
+
+*.egg-info
