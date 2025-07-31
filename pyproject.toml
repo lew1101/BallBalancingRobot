@@ -16,3 +16,10 @@ dev = [
     "matplotlib>=3.9.2",
     "pytest>=8.4.1",
 ]
+
+[project.scripts]
+bbrobot = "run:main"
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
