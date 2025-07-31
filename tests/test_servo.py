@@ -2,8 +2,8 @@ import pigpio  # type: ignore
 
 from math import radians
 
-from src.constants import *
-from src.actuation import setArmPositions
+from BallBalancingRobot.constants import *
+from BallBalancingRobot.actuation import setArmPositions
 
 
 def test_servo():

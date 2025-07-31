@@ -2,8 +2,8 @@ import cv2
 
 from picamera2 import Picamera2  # type:ignore
 
-from src.vision import *
-from src.constants import *
+from BallBalancingRobot.vision import *
+from BallBalancingRobot.constants import *
 
 
 def test_vision():

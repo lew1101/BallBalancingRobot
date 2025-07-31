@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from src.constants import *
-from src.kinematics import solveArmPositions
+from BallBalancingRobot.constants import *
+from BallBalancingRobot.kinematics import solveArmPositions
 
 L = 100
 
@@ -50,4 +50,3 @@ def test_kinematics():
 
     plt.ioff()
     plt.show()
-

@@ -2,8 +2,8 @@ import pigpio  # type: ignore
 
 from time import monotonic, sleep
 
-from src.imu import *
-from src.constants import *
+from BallBalancingRobot.imu import *
+from BallBalancingRobot.constants import *
 
 
 def test_imu():

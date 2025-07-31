@@ -17,7 +17,7 @@ dev = [
 ]
 
 [project.scripts]
-bbrobot = "run:main"
+bbrobot = "BallBalancingRobot:__main__"
 
 [build-system]
 requires = ["setuptools", "wheel"]
