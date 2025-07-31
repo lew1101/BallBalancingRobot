@@ -2,7 +2,7 @@
 
 **Author:** [Kenneth Lew](https://github.com/lew1101)
 
-Software for a Raspberry Pi–based 3D-printed ball-balancing robot built by Kenneth Lew and Lek Man.
+Software for a Raspberry Pi–based 3D-printed ball-balancing robot built by [Kenneth Lew](https://github.com/lew1101) and [Lek Man](https://github.com/sophondroplet).
 
 ## Features
 
@@ -50,4 +50,10 @@ Run script:
 
 ```bash
 bbrobot 
+```
+
+## Usage
+
+```bash
+bbrobot [-h] [--setpoint X Y] [--debug] [--no-imu]
 ```
