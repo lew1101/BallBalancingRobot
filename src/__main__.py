@@ -1,6 +1,9 @@
 import cv2
 import pigpio  # type: ignore
+
 from picamera2 import Picamera2  # type: ignore
+from os import getenv
+from argparse import ArgumentParser
 
 # import csv
 from time import monotonic, sleep
@@ -15,9 +18,35 @@ from .control import PIDController
 from .imu import createNormalEstimator
 
 
-def main(args):
-    DEBUG = getattr(args, "debug", False)
-    IMU_ENABLED = not getattr(args, "no_imu", False)
+def parseArgs(argv=None):
+    parser = ArgumentParser(description="Ball-balancing Robot")
+    parser.add_argument(
+        '--setpoint',
+        type=float,
+        nargs=2,
+        metavar='setPoint',
+        help='Setpoint for ball position as two floats (x y)',
+        default=(0.0, 0.0),
+    )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Enable debug mode",
+        default=getenv("DEBUG"),
+    )
+    parser.add_argument(
+        "--no-imu",
+        action="store_true",
+        help="Enable debug mode",
+        default=False,
+    )
+
+    return vars(parser.parse_args(argv))
+
+
+def main(**kwargs) -> None:
+    DEBUG = getattr(kwargs, "debug", False)
+    IMU_ENABLED = not getattr(kwargs, "no_imu", False)
 
     # logfile = open("pid_log.csv", "w", newline='')
     # logger = csv.writer(logfile)
@@ -48,7 +77,7 @@ def main(args):
 
         # =====
 
-        path = pathFactory("setpoint", getattr(args, "setpoint", DEFAULT_SETPOINT))
+        path = pathFactory("setpoint", getattr(kwargs, "setpoint", DEFAULT_SETPOINT))
         pathiter = iter(path)
 
         setpoint = setX, setY = next(pathiter)
@@ -177,3 +206,8 @@ def main(args):
 
         # logfile.close()
         cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    kwargs = parseArgs()
+    main(**kwargs)
