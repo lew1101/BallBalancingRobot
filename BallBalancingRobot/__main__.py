@@ -46,7 +46,7 @@ def parseArgs(argv=None):
 
 def main(argv=None) -> None:
     kwargs = parseArgs(argv)
-    
+
     DEBUG = getattr(kwargs, "debug", False)
     IMU_ENABLED = not getattr(kwargs, "no_imu", False)
 
@@ -79,15 +79,15 @@ def main(argv=None) -> None:
 
         # =====
 
+        if IMU_ENABLED:
+            print("IMU enabled, creating normal estimator")
+            getNextNormal = createNormalEstimator(pi, beta=BETA)  # closure
+
         path = pathFactory("setpoint", getattr(kwargs, "setpoint", DEFAULT_SETPOINT))
         pathiter = iter(path)
 
         setpoint = setX, setY = next(pathiter)
         print(f"Intial setpoint: ({setX}, {setY})")
-
-        if IMU_ENABLED:
-            print("IMU enabled, creating normal estimator")
-            getNextNormal = createNormalEstimator(pi, beta=BETA)  # closure
 
         pidX = PIDController(kp=KPX,
                              ki=KIX,
@@ -208,6 +208,7 @@ def main(argv=None) -> None:
 
         # logfile.close()
         cv2.destroyAllWindows()
+
 
 if __name__ == "__main__":
     main()
