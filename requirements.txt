@@ -1,7 +1,0 @@
-ahrs==0.3.1
-argparse==1.4.0
-numpy==2.0.2
-pigpio==1.78
-
-# Note: OpenCV and picamera2 needs to be install seperately as system dependecies
-# This is because they are not available on PyPI for the Raspberry Pi architecture
