@@ -57,7 +57,9 @@ def main(argv=None) -> None:
     # Init PIGPIO
     pi = pigpio.pi()
     if not pi.connected:
-        raise RuntimeError("Failed to connect to pigpio daemon. Is it running?")
+        raise RuntimeError("Failed to connect to the pigpio daemon. Is it running?\n"
+                           "To start it, run:\n"
+                           "    sudo pigpiod\n")
 
     try:
         setArmPositions(pi, 0, 0, 0)  # reset servos to 0 position

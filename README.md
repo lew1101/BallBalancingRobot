@@ -19,24 +19,13 @@ git clone https://github.com/yourusername/BallBalancingRobot.git
 cd BallBalancingRobot
 ```
 
-**2. Install system depedencies on Pi.**
+**2. Install Project**
 
 ```bash
-sudo apt update
-sudo apt install -y pigpio python3-picamera2 libopencv-dev 
+sh install.sh
 ```
 
-This will install the `pipgpio` daemon as well as `picamera2` and `OpenCV` as system dependencies. We install them seperately because they are not available on PyPI for the Raspberry Pi architecture.
-
-**3. Install the project as an editable module.**
-
-Make sure the Python version on the Pi is >=3.9. Then run:
-
-```bash
-pip install -e .
-```
-
-This will install the project into the environment as well as install the rest of the python dependencies.
+This script install system dependencies (eg. `picamera2`, `pigpio`, `opencv`) and installs the project as a command tool to the system.
 
 ## Running the Script
 
