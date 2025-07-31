@@ -17,6 +17,7 @@ from .imu import createNormalEstimator
 
 def main(args):
     DEBUG = getattr(args, "debug", False)
+    IMU_ENABLED = not getattr(args, "no_imu", False)
 
     # logfile = open("pid_log.csv", "w", newline='')
     # logger = csv.writer(logfile)
@@ -53,7 +54,9 @@ def main(args):
         setpoint = setX, setY = next(pathiter)
         print(f"Intial setpoint: ({setX}, {setY})")
 
-        getNextNormal = createNormalEstimator(pi, beta=BETA)  # closure
+        if IMU_ENABLED:
+            print("IMU enabled, creating normal estimator")
+            getNextNormal = createNormalEstimator(pi, beta=BETA)  # closure
 
         pidX = PIDController(kp=KPX,
                              ki=KIX,
@@ -123,11 +126,12 @@ def main(args):
             pidMag = hypot(pidXVal, pidYVal)
             errorMag = hypot(errorX, errorY)
 
-            #
-            actualNormal = getNextNormal(dt)
-            normalX, normalY, _ = actualNormal * NORMAL_Z / actualNormal[2]
-            normalCmdX = pidXVal + NORMAL_CORRECTION_GAIN * (normalX - pidXVal)
-            normalCmdY = pidYVal + NORMAL_CORRECTION_GAIN * (normalY - pidYVal)
+            if IMU_ENABLED:
+                # correct normal based on IMU data
+                actualNormal = getNextNormal(dt)
+                normalX, normalY, _ = actualNormal * NORMAL_Z / actualNormal[2]
+                normalCmdX = pidXVal + NORMAL_CORRECTION_GAIN * (normalX - pidXVal)
+                normalCmdY = pidYVal + NORMAL_CORRECTION_GAIN * (normalY - pidYVal)
 
             if errorMag < ERROR_THRESHOLD:
                 # euclidean distance to setpoint is less than threshold
